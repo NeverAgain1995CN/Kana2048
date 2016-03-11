@@ -1,19 +1,21 @@
 package com.napls.kana2048;
 
+import com.qhad.ads.sdk.adcore.Qhad;
+import com.qhad.ads.sdk.interfaces.IQhBannerAd;
+
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	private TextView currentScore;
@@ -28,9 +30,17 @@ public class MainActivity extends Activity {
 	private Button help;
 	private Button kanaTable;
 	private int current_score = 0;
-	private int best_score = 10000;
+	private int best_score = 0;
 
-	public int w, h, oldw, oldh;
+	private GameView gameView;
+
+	private SharedPreferences pref;
+	private SharedPreferences.Editor editor;
+	private Card[][] savedCardsMap = new Card[5][5];
+	private int[][] savedCardsMapNum = new int[5][5];
+
+	private RelativeLayout adContainer = null;
+	private IQhBannerAd bannerad = null;
 
 	public MainActivity() {
 		mainActivity = this;
@@ -41,15 +51,29 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
+		editor = getSharedPreferences("data", MODE_PRIVATE).edit();
+		pref = getSharedPreferences("data", MODE_PRIVATE);
+
 		currentScore = (TextView) findViewById(R.id.score_current);
 		bestScore = (TextView) findViewById(R.id.score_best);
 		addScoreText = (TextView) findViewById(R.id.add_score_anim);
 		addScoreAnimation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.add_score);
 		addScoreComboAnimation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.add_score_combo);
+		gameView = (GameView) findViewById(R.id.game_view);
 
 		newGame = (Button) findViewById(R.id.new_game);
 		help = (Button) findViewById(R.id.help);
 		kanaTable = (Button) findViewById(R.id.kana_table);
+
+		showScore();
+		startOldGame();
+		adContainer = (RelativeLayout) findViewById(R.id.banner_adcontainer); // 广告容器
+																				// adContainer
+
+		/**
+		 * 显示广告
+		 */
+		addAds();
 
 		help.setOnClickListener(new OnClickListener() {
 
@@ -74,7 +98,6 @@ public class MainActivity extends Activity {
 				for (int i = 0; i < 2; i++) {
 					comboNum[i] = 0;
 				}
-				GameView gameView = (GameView) findViewById(R.id.game_view);
 				gameView.startNewGame();
 			}
 		});
@@ -118,7 +141,7 @@ public class MainActivity extends Activity {
 		}
 		if (comboNum[0] == comboNum[1]) {
 			VibratorUtil.Vibrate(MainActivity.getMainActivity(), 100);
-			addScoreText.setText("连击！ " + "+" + score + "*2");
+			addScoreText.setText("连击！ " + "+" + score + "×2");
 			addScoreText.setTextColor(Color.parseColor("#D94600"));
 			addScoreComboAnimation.setFillAfter(true);
 			addScoreText.startAnimation(addScoreComboAnimation);
@@ -137,6 +160,63 @@ public class MainActivity extends Activity {
 
 	public static MainActivity getMainActivity() {
 		return mainActivity;
+	}
+
+	private void startOldGame() {
+		String keyName;
+		int xPosition, yPosition;
+		for (int y = 0; y < 5; y++) {
+			for (int x = 0; x < 5; x++) {
+				xPosition = x;
+				yPosition = y;
+				keyName = xPosition + "" + yPosition;
+				savedCardsMap = (Card[][]) gameView.getCardsMap();
+				savedCardsMapNum[x][y] = pref.getInt(keyName, 0);
+			}
+		}
+		current_score = pref.getInt("cs", 0);
+		best_score = pref.getInt("bs", 0);
+		showScore();
+		gameView.setCardsMapNum(savedCardsMapNum);
+	}
+
+	public int getCurrent_score() {
+		return current_score;
+	}
+
+	public int getBest_score() {
+		return best_score;
+	}
+
+	public void setBest_score(int best_score) {
+		this.best_score = best_score;
+		editor.putInt("bs", best_score);
+		editor.commit();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		savedCardsMap = (Card[][]) gameView.getCardsMap().clone();
+		String keyName;
+		int xPosition, yPosition;
+		for (int y = 0; y < 5; y++) {
+			for (int x = 0; x < 5; x++) {
+				xPosition = x;
+				yPosition = y;
+				savedCardsMapNum[x][y] = savedCardsMap[x][y].getNum();
+				keyName = xPosition + "" + yPosition;
+				editor.putInt(keyName, savedCardsMapNum[x][y]);
+			}
+		}
+		editor.putInt("cs", current_score);
+		editor.putInt("bs", best_score);
+		editor.commit();
+	}
+
+	private void addAds() {
+		final String adSpaceid = "55kGaoBe2K"; // 广告位ID adSpaceid
+		bannerad = Qhad.showBanner(adContainer, MainActivity.this, adSpaceid, false); // 请求广告
 	}
 
 }

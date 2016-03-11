@@ -6,11 +6,13 @@ import java.util.List;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Camera;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,6 +28,7 @@ import android.widget.Toast;
 public class GameView extends GridLayout {
 
 	private Card[][] cardsMap = new Card[5][5];
+	private int[][] cardsMapNum = new int[5][5];
 	private List<Point> emptyPoints = new ArrayList<Point>();
 
 	private Animation swipeLeftAnimation;
@@ -96,12 +99,20 @@ public class GameView extends GridLayout {
 
 		int cardWidth = (Math.min(w, h) - 10) / 5;
 		addCards(cardWidth, cardWidth);
-
-		startGame();
+		int cardsNum0Counter = 0;
+		for (int y = 0; y < 5; y++) {
+			for (int x = 0; x < 5; x++) {
+				cardsMap[x][y].setNum(cardsMapNum[x][y]);
+				if (cardsMap[x][y].getNum() == 0)
+					cardsNum0Counter++;
+			}
+		}
+		if (cardsNum0Counter == 25) {
+			startGame();
+		}
 	}
 
 	public void startNewGame() {
-
 		startGame();
 	}
 
@@ -181,7 +192,15 @@ public class GameView extends GridLayout {
 				TextView tv_message = (TextView) window.findViewById(R.id.dialog_judge_message);
 				tv_message.setGravity(Gravity.CENTER);
 				tv_message.setTextColor(Color.parseColor("#FFD700"));
-				tv_message.setText("勝利！" + "\n\n" + "恭喜，您已赢得了游戏！");
+				if (MainActivity.getMainActivity().getCurrent_score() > MainActivity.getMainActivity()
+						.getBest_score()) {
+					tv_message.setText("勝利！" + "\n\n" + "恭喜，您已创造了新记录！" + "\n\n" + "最高得分："
+							+ MainActivity.getMainActivity().getCurrent_score());
+					MainActivity.getMainActivity().setBest_score(MainActivity.getMainActivity().getCurrent_score());
+				} else {
+					tv_message.setText("勝利！" + "\n\n" + "恭喜，您已赢得了游戏！" + "\n\n" + "本局得分："
+							+ MainActivity.getMainActivity().getCurrent_score());
+				}
 				startGame();
 				// new
 				// AlertDialog.Builder(getContext()).setTitle("hello!").setMessage("You
@@ -221,7 +240,7 @@ public class GameView extends GridLayout {
 	}
 
 	private void swipeLeft() {
-		boolean merge = false;
+		boolean merge = false; // y是行，x是列
 		for (int y = 0; y < 5; y++) {
 			for (int x = 0; x < 5; x++) {
 				for (int x1 = x + 1; x1 < 5; x1++) { // 向右遍历
@@ -377,6 +396,18 @@ public class GameView extends GridLayout {
 			addRandomNum();
 			checkComplete();
 		}
+	}
+
+	public Card[][] getCardsMap() {
+		return cardsMap;
+	}
+
+	public void setCardsMap(Card[][] cardsMap) {
+		this.cardsMap = cardsMap;
+	}
+
+	public void setCardsMapNum(int[][] cardsMapNum) {
+		this.cardsMapNum = cardsMapNum;
 	}
 
 }

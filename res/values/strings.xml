@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">かNA2048</string>
+    <string name="app_name">kaNA2048</string>
     <string name="action_settings">Settings</string>
     <string name="current_score">当前得分:</string>
     <string name="best_score">最佳得分：</string>
